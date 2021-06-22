@@ -1,0 +1,30 @@
+version: '3'
+services:
+  produto-service:
+    image: produto-service
+    container_name: produto-service
+    build: ./
+    ports:
+      - 8080:8080
+    links:
+      - mysqldb
+    depends_on:
+      - mysqldb
+
+  mysqldb:
+    image: mysql
+    container_name: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_DATABASE=produtoService
+    ports:
+      - 3306:3306
+
+volumes:
+    data: {}
+
+networks:
+  default:
+       name: mysql_network
