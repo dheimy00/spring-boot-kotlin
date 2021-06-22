@@ -27,7 +27,7 @@ class AutorServiceImpl(private val autorRepository: AutorRepository) : AutorServ
 
         val nome = autorRepository.findByEmail(createAutorRequest.email)
         if (nome.isPresent) {
-            throw ResourceNotFoundException("Categoria já existe email ${nome.get().nome}")
+            throw ResourceNotFoundException("Autor já existe email ${nome.get().nome}")
         }
         var autor = converter.convertRequestToEntity(createAutorRequest)
         autor = autorRepository.save(autor)
@@ -46,7 +46,7 @@ class AutorServiceImpl(private val autorRepository: AutorRepository) : AutorServ
             autorId.get().email = updateAutorRequest.email
             return converter.convertEntityToUpdate(autorRepository.save(autorId.get()))
         }
-        throw ResourceNotFoundException("Categoria não encontro id $id")
+        throw ResourceNotFoundException("Autor não encontro id $id")
     }
 
 
@@ -58,7 +58,7 @@ class AutorServiceImpl(private val autorRepository: AutorRepository) : AutorServ
             val autorId = autorRepository.findById(id)
             return converter.convertEntityToResponse(autorId.get())
         }
-        throw ResourceNotFoundException("Categoria não encontro id $id")
+        throw ResourceNotFoundException("Autor não encontro id $id")
     }
 
 
@@ -68,7 +68,7 @@ class AutorServiceImpl(private val autorRepository: AutorRepository) : AutorServ
         if (autorRepository.existsById(id)) {
             autorRepository.deleteById(id)
         }
-        throw ResourceNotFoundException("Categoria não encontro id $id")
+        throw ResourceNotFoundException("Autor não encontro id $id")
     }
 
 }
