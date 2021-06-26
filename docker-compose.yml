@@ -1,0 +1,44 @@
+version: '3'
+services:
+
+  mysqldb:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: produtoService
+    volumes:
+      - data:/var/lib/mysql
+    ports:
+      - 3306:3306
+    networks:
+      - produto-mysql
+
+  produto-service:
+    image: produto-service
+    container_name: produto-service
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    volumes:
+      - data:/spring-boot-app
+    links:
+      - mysqldb
+    depends_on:
+      - mysqldb
+    environment:
+       SPRING_DATASOURCE_URL: jdbc:mysql://mysqldb:3306/produtoService
+       SPRING_DATASOURCE_USERNAME: root
+       SPRING_DATASOURCE_PASSWORD: root
+    networks:
+      - produto-mysql
+
+volumes:
+   data:
+
+networks:
+  produto-mysql:
+    driver: bridge
