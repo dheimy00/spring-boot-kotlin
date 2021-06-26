@@ -9,7 +9,7 @@ USER root
 RUN chown -R gradle /home/gradle/src
 
 RUN chmod +x gradlew
-RUN ./gradlew build || return 0
+RUN gradle build || return 0
 COPY . .
 RUN  gradle clean build
 
