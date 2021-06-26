@@ -5,7 +5,7 @@ COPY *.gradle gradle.* gradlew /src/
 COPY gradle /src/gradle
 WORKDIR /src
 RUN chmod +x ./gradlew
-RUN ./gradlew --versio
+RUN ./gradlew build
 
 
 FROM openjdk:11-jre-slim
