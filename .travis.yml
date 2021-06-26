@@ -15,8 +15,10 @@ before_install:
   - chmod +x docker-compose
   - sudo mv docker-compose /usr/local/bin
   - chmod +x gradlew
+  - chmod +x gradle/wrapper/gradle-wrapper.jar
+  
 before_script:
   - docker-compose up -d --build
-  
+    
 after_script:
   - docker-compose down
