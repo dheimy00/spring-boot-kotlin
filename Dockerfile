@@ -1,14 +1,19 @@
-FROM adoptopenjdk/openjdk11:alpine as BUILD
+FROM gradle:6.5.0-jdk11 AS TEMP_BUILD_IMAGE
+ENV APP_HOME=/usr/app/
+WORKDIR $APP_HOME
+COPY build.gradle.kts settings.gradle.kts $APP_HOME
 
-# Get gradle distribution 
-COPY *.gradle gradle.* gradlew /src/
-COPY gradle /src/gradle
-WORKDIR /src
-RUN chmod +x ./gradlew
-RUN ./gradlew build
+COPY gradle $APP_HOME/gradle
+COPY --chown=gradle:gradle . /home/gradle/src
+USER root
+RUN chown -R gradle /home/gradle/src
+
+RUN ./gradle build || return 0
+COPY . .
+RUN gradle clean build
 
 
-FROM openjdk:11-jre-slim
+FROM openjdk:11-jdk
 VOLUME /tmp
-ADD /build/libs/produto-service-0.0.1-SNAPSHOT.jar produto-service.jar
+ADD /build/libs/*-SNAPSHOT.jar produto-service.jar
 ENTRYPOINT ["java","-jar","produto-service.jar","--spring.profiles.active=docker"]
