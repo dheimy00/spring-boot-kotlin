@@ -22,12 +22,14 @@ jobs:
         java-version: '11'
         distribution: 'adopt'
         
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - name: Build with Gradle
+      run: ./gradlew build -x test
+        
     - uses: actions/checkout@v2
     - name: Build the stack
       run: docker-compose up -d --build
       
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-    - name: Build with Gradle
-      run: ./gradlew build
+
 
