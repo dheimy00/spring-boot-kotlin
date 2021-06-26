@@ -5,9 +5,7 @@ COPY *.gradle gradle.* gradlew /src/
 COPY gradle /src/gradle
 WORKDIR /src
 RUN chmod +x ./gradlew
-RUN ./gradlew --version
-COPY . .
-RUN ./gradlew --no-daemon shadowJar
+RUN ./gradlew --versio
 
 
 FROM openjdk:11-jre-slim
