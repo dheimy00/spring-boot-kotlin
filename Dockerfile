@@ -4,10 +4,9 @@ FROM adoptopenjdk/openjdk11:alpine as BUILD
 COPY *.gradle gradle.* gradlew /src/
 COPY gradle /src/gradle
 WORKDIR /src
+RUN chmod +x ./gradlew
 RUN ./gradlew --version
-
 COPY . .
-ENV MAIN_CLASS_NAME=com.example.App
 RUN ./gradlew --no-daemon shadowJar
 
 
