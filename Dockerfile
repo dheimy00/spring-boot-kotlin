@@ -8,10 +8,9 @@ COPY --chown=gradle:gradle . /home/gradle/src
 USER root
 RUN chown -R gradle /home/gradle/src
 
-RUN ./gradle build || return 0
+RUN ./gradlew build || return 0
 COPY . .
-RUN gradle clean build
-
+RUN ./gradlew clean build
 
 FROM openjdk:11-jdk
 VOLUME /tmp
