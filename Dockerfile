@@ -8,7 +8,8 @@ COPY --chown=gradle:gradle . /home/gradle/src
 USER root
 RUN chown -R gradle /home/gradle/src
 
-RUN ./gradle build || return 0
+RUN chmod +x gradlew
+RUN gradle build || return 0
 COPY . .
 RUN gradle clean build
 
