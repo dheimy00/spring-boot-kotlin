@@ -18,7 +18,7 @@ before_install:
   - chmod +x gradle/wrapper/gradle-wrapper.jar
   
 script:
-  - ./gradlew clean build 
+  - ./gradlew clean build -x test
   - docker-compose up -d --build
     
 after_script:
