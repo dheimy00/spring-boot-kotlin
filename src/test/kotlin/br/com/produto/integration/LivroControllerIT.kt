@@ -4,6 +4,8 @@ import br.com.produto.builders.AutorBuilder
 import br.com.produto.builders.CategoriaBuilder
 import br.com.produto.builders.requests.CreateAutorRequestBuilder
 import br.com.produto.builders.requests.CreateCategoriaRequestBuilder
+import br.com.produto.model.Autor
+import br.com.produto.model.Categoria
 import br.com.produto.model.Livro
 import br.com.produto.repository.AutorRepository
 import br.com.produto.repository.CategoriaRepository
@@ -13,23 +15,26 @@ import br.com.produto.response.LivroResponse
 import br.com.produto.utils.GeneralMessage
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.*
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.ArgumentMatchers
+import org.mockito.BDDMockito
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.test.web.client.TestRestTemplate
-import org.springframework.boot.test.web.client.postForEntity
 import org.springframework.boot.web.server.LocalServerPort
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
+import java.util.*
 
 
+@ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @DisplayName("Livro Controller Test Integration")
 class LivroControllerIT {
@@ -41,28 +46,102 @@ class LivroControllerIT {
     @LocalServerPort
     private lateinit var port: java.lang.Integer
 
-    @Autowired
+    @MockBean
     lateinit var livroRepository: LivroRepository
 
-    @Autowired
+    @MockBean
     lateinit var categoriaRepository: CategoriaRepository
 
-    @Autowired
+    @MockBean
     lateinit var autorRepository: AutorRepository
 
+    @BeforeEach
+    fun setUp() {
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //Categoria
+        //
+        //Save
+        BDDMockito.`when`(categoriaRepository.save(ArgumentMatchers.any(Categoria::class.java)))
+            .thenReturn(CategoriaBuilder.createCategoria())
+        //ExistsById
+        BDDMockito.`when`(categoriaRepository.existsById(ArgumentMatchers.anyLong())).thenReturn(true)
+        //FindById
+        BDDMockito.`when`(categoriaRepository.findById(ArgumentMatchers.anyLong()))
+            .thenReturn(Optional.of(CategoriaBuilder.createCategoria()))
+
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //Autor
+        //
+        //Save
+        BDDMockito.`when`(autorRepository.save(ArgumentMatchers.any(Autor::class.java)))
+            .thenReturn(AutorBuilder.createAutor())
+        //ExistsById
+        BDDMockito.`when`(autorRepository.existsById(ArgumentMatchers.anyLong())).thenReturn(true)
+        //FindById
+        BDDMockito.`when`(autorRepository.findById(ArgumentMatchers.anyLong()))
+            .thenReturn(Optional.of(AutorBuilder.createAutor()))
+
+    }
 
     @Test
     @Order(1)
+    fun `Consultar livro quando sucesso`() {
+
+        categoriaRepository.existsById(CreateCategoriaRequestBuilder.createCategoria().id!!)
+        val idCategoria = categoriaRepository.findById(CreateCategoriaRequestBuilder.createCategoria().id!!)
+
+        autorRepository.existsById(CreateAutorRequestBuilder.createAutor().id)
+        val idAutor = autorRepository.findById(CreateAutorRequestBuilder.createAutor().id)
+
+        //Livro
+        val livroBuilder = Livro(
+            1L,
+            "titulo",
+            "resumo",
+            "teste_isbn5",
+            21.0,
+            "teste_sumario",
+            100,
+            LocalDateTime.now(),
+            idCategoria.get(),
+            idAutor.get()
+        )
+
+        //Save
+        BDDMockito.`when`(livroRepository.save(ArgumentMatchers.any(Livro::class.java))).thenReturn(livroBuilder)
+        //FindAll
+        val listaLivros: List<Livro> = listOf(livroBuilder, livroBuilder)
+        BDDMockito.given(livroRepository.findAll()).willReturn(listaLivros)
+
+        val saveLivro = livroRepository.save(livroBuilder)
+        val livros = livroRepository.findAll();
+
+        val livrosEntity: List<Livro>? = testRestTemplate.exchange(
+            "/v1/api/livros",
+            HttpMethod.GET,
+            null,
+            object : ParameterizedTypeReference<List<Livro>>() {}).body
+
+        Assertions.assertThat(livrosEntity).isNotNull
+        Assertions.assertThat(livrosEntity?.get(0)?.titulo).isEqualTo(livros.get(0)?.titulo)
+
+    }
+
+    @Test
+    @Order(2)
     fun `Criar livro quando sucesso`() {
 
-        val saveCategoria = categoriaRepository.save(CategoriaBuilder.createCategoria())
-        categoriaRepository.existsById(saveCategoria.id!!)
-        val categoria =categoriaRepository.findById(saveCategoria.id!!)
+        categoriaRepository.existsById(CreateCategoriaRequestBuilder.createCategoria().id!!)
+        val idCategoria = categoriaRepository.findById(CreateCategoriaRequestBuilder.createCategoria().id!!)
 
-        val saveAutor = autorRepository.save(AutorBuilder.createAutor())
-        autorRepository.existsById(saveAutor.id!!)
-        val autor = autorRepository.findById(saveAutor.id!!)
+        autorRepository.existsById(CreateAutorRequestBuilder.createAutor().id)
+        val idAutor = autorRepository.findById(CreateAutorRequestBuilder.createAutor().id)
 
+        //Request livro
         val livroRequest = CreateLivroRequest(
             1L,
             "titulo",
@@ -72,9 +151,26 @@ class LivroControllerIT {
             "teste_sumario",
             100,
             LocalDateTime.now(),
-            categoria.get().id!!,
-            autor.get().id!!
+            idCategoria.get().id!!,
+            idAutor.get().id!!
         )
+
+        //Entity livro
+        val livroBuilder = Livro(
+            1L,
+            "titulo",
+            "resumo",
+            "teste_isbn5",
+            21.0,
+            "teste_sumario",
+            100,
+            LocalDateTime.now(),
+            idCategoria.get(),
+            idAutor.get()
+        )
+
+        //Save
+        BDDMockito.`when`(livroRepository.save(ArgumentMatchers.any(Livro::class.java))).thenReturn(livroBuilder)
 
         val responseEntity: ResponseEntity<LivroResponse> =
             testRestTemplate.postForEntity("/v1/api/livros", livroRequest, LivroResponse::class.java);
@@ -86,23 +182,19 @@ class LivroControllerIT {
 
 
     @Test
-    @Order(2)
+    @Order(3)
     fun `Obter id livro quando sucesso`() {
 
-        val saveCategoria = categoriaRepository.save(CategoriaBuilder.createCategoria())
-        categoriaRepository.existsById(saveCategoria.id!!)
-        val idCategoria = categoriaRepository.findById(saveCategoria.id!!)
+        categoriaRepository.existsById(CreateCategoriaRequestBuilder.createCategoria().id!!)
+        val idCategoria = categoriaRepository.findById(CreateCategoriaRequestBuilder.createCategoria().id!!)
 
-        val autor = AutorBuilder.createAutor()
-        autor.email = "teste2@gmail.com"
-        val saveAutor = autorRepository.save(autor)
-        autorRepository.existsById(saveAutor.id!!)
-        val idAutor = autorRepository.findById(saveAutor.id!!)
+        autorRepository.existsById(CreateAutorRequestBuilder.createAutor().id)
+        val idAutor = autorRepository.findById(CreateAutorRequestBuilder.createAutor().id)
 
         //Livro
         val livroBuilder = Livro(
             1L,
-            "teste_titulo2",
+            "titulo",
             "resumo",
             "teste_isbn2",
             21.0,
@@ -112,35 +204,35 @@ class LivroControllerIT {
             idCategoria.get(),
             idAutor.get()
         )
+        //Save
+        BDDMockito.`when`(livroRepository.save(ArgumentMatchers.any(Livro::class.java))).thenReturn(livroBuilder)
+        //FindById
+        BDDMockito.`when`(livroRepository.existsById(ArgumentMatchers.anyLong())).thenReturn(true)
+        //FindById
+        BDDMockito.`when`(livroRepository.findById(ArgumentMatchers.anyLong())).thenReturn(Optional.of(livroBuilder))
 
-        val saveLivro = livroRepository.save(livroBuilder)
-
-        val livro: Livro = testRestTemplate.getForObject("/v1/api/livros/{id}", Livro::class.java, saveLivro.id);
+        val findLivro = livroRepository.findById(livroBuilder.id!!)
+        val livro: Livro = testRestTemplate.getForObject("/v1/api/livros/{id}", Livro::class.java, findLivro.get().id);
 
         Assertions.assertThat(livro).isNotNull
         Assertions.assertThat(livro.id).isEqualTo(livro.id)
     }
 
     @Test
-    @Order(3)
+    @Order(4)
     fun `Excluir id livro quando sucesso`() {
 
 
-        val saveCategoria = categoriaRepository.save(CategoriaBuilder.createCategoria())
-        categoriaRepository.existsById(saveCategoria.id!!)
-        val idCategoria = categoriaRepository.findById(saveCategoria.id!!)
+        categoriaRepository.existsById(CreateCategoriaRequestBuilder.createCategoria().id!!)
+        val idCategoria = categoriaRepository.findById(CreateCategoriaRequestBuilder.createCategoria().id!!)
 
-
-        val autor = AutorBuilder.createAutor()
-        autor.email = "teste3@gmail.com"
-        val saveAutor = autorRepository.save(autor)
-        autorRepository.existsById(saveAutor.id!!)
-        val idAutor = autorRepository.findById(saveAutor.id!!)
+        autorRepository.existsById(CreateAutorRequestBuilder.createAutor().id)
+        val idAutor = autorRepository.findById(CreateAutorRequestBuilder.createAutor().id)
 
         //Livro
         val livroBuilder = Livro(
             1L,
-            "teste_titulo3",
+            "titulo",
             "resumo",
             "teste_isbn3",
             21.0,
@@ -151,7 +243,15 @@ class LivroControllerIT {
             idAutor.get()
         )
 
+        //Save
+        BDDMockito.`when`(livroRepository.save(ArgumentMatchers.any(Livro::class.java))).thenReturn(livroBuilder)
+        //ExistsById
+        BDDMockito.`when`(livroRepository.existsById(ArgumentMatchers.anyLong())).thenReturn(true)
+        //DeleteById
+        BDDMockito.doNothing().`when`(livroRepository).deleteById(ArgumentMatchers.anyLong())
+
         val saveLivro = livroRepository.save(livroBuilder)
+
 
         val responseEntity: ResponseEntity<GeneralMessage> = testRestTemplate.exchange(
             "/v1/api/livros/{id}",
@@ -159,28 +259,23 @@ class LivroControllerIT {
             GeneralMessage::class.java, saveLivro.id
         );
 
-        Assertions.assertThat(responseEntity).isNotNull
         Assertions.assertThat(responseEntity.statusCode).isEqualTo(HttpStatus.OK)
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     fun `Atualizar id livro quando sucesso`() {
 
-        val saveCategoria = categoriaRepository.save(CategoriaBuilder.createCategoria())
-        categoriaRepository.existsById(saveCategoria.id!!)
-        val idCategoria = categoriaRepository.findById(saveCategoria.id!!)
+        categoriaRepository.existsById(CreateCategoriaRequestBuilder.createCategoria().id!!)
+        val idCategoria = categoriaRepository.findById(CreateCategoriaRequestBuilder.createCategoria().id!!)
 
-        val autor = AutorBuilder.createAutor()
-        autor.email = "teste4@gmail.com"
-        val saveAutor = autorRepository.save(autor)
-        autorRepository.existsById(saveAutor.id!!)
-        val idAutor = autorRepository.findById(saveAutor.id!!)
+        autorRepository.existsById(CreateAutorRequestBuilder.createAutor().id)
+        val idAutor = autorRepository.findById(CreateAutorRequestBuilder.createAutor().id)
 
         //Livro
         val livroBuilder = Livro(
             1L,
-            "teste_titulo4",
+            "titulo",
             "resumo",
             "teste_isbn4",
             21.0,
@@ -191,14 +286,21 @@ class LivroControllerIT {
             idAutor.get()
         )
 
-        val saveLivro = livroRepository.save(livroBuilder)
+        //Save
+        BDDMockito.`when`(livroRepository.save(ArgumentMatchers.any(Livro::class.java))).thenReturn(livroBuilder)
+        //ExistsById
+        BDDMockito.`when`(livroRepository.existsById(ArgumentMatchers.anyLong())).thenReturn(true)
+        //FindById
+        BDDMockito.`when`(livroRepository.findById(ArgumentMatchers.anyLong())).thenReturn(Optional.of(livroBuilder))
 
-        saveLivro.titulo = "novo teste"
+        val findLivro = livroRepository.findById(livroBuilder.id!!)
+
+        findLivro.get().titulo = "novo teste"
         val responseEntity: ResponseEntity<GeneralMessage> = testRestTemplate.exchange(
             "/v1/api/livros/{id}",
             HttpMethod.PUT,
-            HttpEntity(saveLivro),
-            GeneralMessage::class.java, saveLivro.id
+            HttpEntity(findLivro.get()),
+            GeneralMessage::class.java, findLivro.get().id
         );
 
         Assertions.assertThat(responseEntity).isNotNull
@@ -206,46 +308,35 @@ class LivroControllerIT {
     }
 
     @Test
-    @Order(5)
-    fun `Consultar livro quando sucesso`() {
+    @Order(6)
+    fun `Criar categoria quando o campo título é obrigatorio - 400 Bad Request `() {
 
-        val saveCategoria = categoriaRepository.save(CategoriaBuilder.createCategoria())
-        categoriaRepository.existsById(saveCategoria.id!!)
-        val idCategoria = categoriaRepository.findById(saveCategoria.id!!)
+        categoriaRepository.existsById(CreateCategoriaRequestBuilder.createCategoria().id!!)
+        val idCategoria = categoriaRepository.findById(CreateCategoriaRequestBuilder.createCategoria().id!!)
 
-        val autor = AutorBuilder.createAutor()
-        autor.email = "teste5@gmail.com"
-        val saveAutor = autorRepository.save(autor)
-        autorRepository.existsById(saveAutor.id!!)
-        val idAutor = autorRepository.findById(saveAutor.id!!)
+        autorRepository.existsById(CreateAutorRequestBuilder.createAutor().id)
+        val idAutor = autorRepository.findById(CreateAutorRequestBuilder.createAutor().id)
 
-        //Livro
-        val livroBuilder = Livro(
+        //Request livro
+        val livroRequest = CreateLivroRequest(
             1L,
-            "teste_titulo5",
+            " ",
             "resumo",
-            "teste_isbn5",
+            "teste_isbn1",
             21.0,
             "teste_sumario",
             100,
             LocalDateTime.now(),
-            idCategoria.get(),
-            idAutor.get()
+            idCategoria.get().id!!,
+            idAutor.get().id!!
         )
 
+        val responseEntity: ResponseEntity<String> = testRestTemplate.postForEntity("/v1/api/livros/",livroRequest ,String::class.java );
 
-        val saveLivro = livroRepository.save(livroBuilder)
-        val livros = livroRepository.findAll();
-
-        val listLivros: List<Livro>? = testRestTemplate.exchange(
-            "/v1/api/livros",
-            HttpMethod.GET,
-            null,
-            object : ParameterizedTypeReference<List<Livro>>() {}).body
-
-        Assertions.assertThat(listLivros).isNotNull
-        Assertions.assertThat(listLivros?.get(0)?.titulo).isEqualTo(livros.get(0)?.titulo)
-
+        Assertions.assertThat(responseEntity.statusCode).isEqualTo(HttpStatus.BAD_REQUEST);
+        Assertions.assertThat(responseEntity.body).contains("clientMessage","O campo título é obrigatório")
     }
+
+
 
 }

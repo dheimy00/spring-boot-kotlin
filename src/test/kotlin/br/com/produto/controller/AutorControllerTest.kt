@@ -7,8 +7,6 @@ import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.*
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.context.request.RequestContextHolder

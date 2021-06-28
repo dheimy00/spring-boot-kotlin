@@ -19,5 +19,9 @@ class AutorBuilder {
         fun updateAutor(): Autor {
             return Autor(1L, "Teste", "teste_descricao", "teste@gmail.com")
         }
+
+        fun fieldAutor(): Autor {
+            return Autor(1L, " ", "teste_descricao", "  ")
+        }
     }
 }

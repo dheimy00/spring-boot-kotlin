@@ -17,5 +17,9 @@ class CategoriaBuilder {
         fun updateCategoria(): Categoria {
             return Categoria(1L, "computacao")
         }
+
+        fun fieldCategoria() : Categoria{
+            return Categoria(1L, " ")
+        }
     }
 }
